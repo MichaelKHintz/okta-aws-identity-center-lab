@@ -1,0 +1,13 @@
+# OS and editor clutter
+.DS_Store
+.vscode/
+.idea/
+
+# Secrets and local-only files
+*.env
+.env*
+*secret*
+*token*
+*.pem
+*.key
+notes-private/
