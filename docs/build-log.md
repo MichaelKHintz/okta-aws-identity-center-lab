@@ -54,3 +54,14 @@ After some further research, there is another section at the bottom of the authe
 Finally! Now the app is asking for MFA when attempting to open the AWS app and TOTP and Email are shown as options (screenshots/mfa-prompt.png). This final config for authentication policy for the app is shown in (screenshots/prompt-for-authentication-every-time.png)
 Now that that is working, I'm going to turn off email as an authenticator as it's not as secure of a method to use. TOTP is slightly better, but not phishing resistant. Something like a FIDO2 key, Okta verify with FastPass, or passkeys would be the better phishing resistant options because they rely on the physical device to also match. 
 Email was disallowed and deactivated from use in the Okta Admin Portal
+
+Phase 4: Inspect and audit
+Opened SAML-tracer in Firefox for a separate session from the default browser.
+Found the SAML POST request in SAML-tracer (marked with the SAML tag)
+Saved a screenshot of the SAML POST in (screenshots/saml-assertion.png) an annotated version has been added to docs/saml-assertion.md
+Navigated to Cloudtrail with the test user account to look at login info. Changed the region to the home region for the account
+Identified a "AssumeRoleWithSAML" event that correlated to the time of login (screenshots/cloudtrail-assume-role-with-saml-event.png)
+Traced sign-in flow in CloudTrail. AssumeRoleWithSAML event shows the test user (testuser@) successfully assumed the AWSReservedSSO_ReadOnlyAccess role with session name matching the Okta username. This confirms the federation chain from Okta identity through SAML assertion to AWS role assumption (screenshots/cloudtrail-assume-role-with-saml-details.png)
+Reviewed users with potential admin privileges and found there is a policy that could allow for admin privileges, but no current users in the group. Added the finding to the docs/audit-findings.md doc
+Navigated to IAM --> Credential Reports to review current users and their permissions
+Identified two users with credentials that could circumvent federation and noted those in the docs/audit-findings.md file
