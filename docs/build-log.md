@@ -32,3 +32,25 @@ Removed test user from the auditors group and moved them to admins group. Logged
 Logged in to the test user account using the admin permissions. Attempted to create a bucket in a region that was not allowed and the creation failed with the same error as before, which was expected (screenshots/admin-bucket-creation-failure-wrong-region.png).
 Attempted to create a bucket in the allowed region and it was successful (screenshots/admin-bucket-creation-success.png).
 Removed user from the aws-admins group in Okta. Validated that their tile no longer shows up and that user account shows as "disabled" in AWS IAM Identity Center. (screenshots/user-disabled-in-iam-identity-center.png)
+
+Phase 3: Sign-on policy and MFA
+Created a new authentication policy in Okta that forced MFA with at least 2 factors.
+Added the policy to the AWS IAM Identity Center app in Okta. 
+Had to force push the aws-admins group from Okta again becuase the user was still showing in IAM Identity center for some reason. Forced the push of that group and the user is no longer there. 
+Added the test user to the aws-auditors group in Okta and validated that they now show up in AWS IAM Identity Center. 
+The attempt to log into AWS Identity Center did not force MFA for the test user. 
+First issue: The user did not have a second factor set up in the Okta env. Second issue: The Okta management console only had phone and Okta Verify App set up as allowed authenticators. Email was "added" as an authenticator, but was disabled in the default config. 
+When attempting to enable email, received this error message To set Email Enrollment to Optional or Required, you must first enable the email authenticator for authentication and recovery. Go to Authenticators > Setup to change the current Recovery only setting. (screenshots/email-authenticator-setup-error.png)
+Opened the email authenticator setup and selected the "Authentication and Recovery" radio button. (screenshots/email-authentication-and-recovery.png)
+Enabled email as an optional authenticator and left the auto-enroll option selected so that any new accounts would be auto-enrolled using the account profile when possible. 
+Push and Phone could also be used as authenticators, but would require some additional configuration so I opted to leave those alone for now
+MFA still wasn't working when I tried to open the AWS app. Did some research and found that the AWS-Access policy now showed email, but the "Disallow specific authentication methods" radio button was selected and "Email" was listed as a disallowed item. (screenshots/mfa-email-disallowed.png)
+Changed the radio button to "Allow any method that can be used to meet the requirement" instead (screenshots/mfa-any-method.png).
+MFA still was not working and there did not appear to be a way to add it in the test users settings. After some research, I found a toggle in the "Settings --> Features" section of the Okta Admin dashboard and that had an "Enable optional email enrollment for Okta Identity Engine" toggle that needed to be turned on (screenshots/enable-email-enrollment.png)
+After switching the toggle on, email was now present as one of the security methods in the test users Okta account and it was automatically set already.
+MFA was still failing. Further researching showed a "Disable Force Authentication" checkbox being checked in the SAML 2.0 setting of the AWS app in the Okta admin portal (screenshots/saml-disable-force-auth.png)
+Unchecking that box and saving still did not allow MFA to work properly when accessing the AWS app from Okta. 
+After some further research, there is another section at the bottom of the authentication policy that is attached to the AWS app titled, "Prompt for authentication". That was set by default to "When it's been over a specified length of time since the user accessed any resource protected by the active Okta global session: Time since last sign in: 12 Hours" (screenshots/prompt-for-authentication-default.png). I'm going to try and change that to "Every time user signs in to resource".
+Finally! Now the app is asking for MFA when attempting to open the AWS app and TOTP and Email are shown as options (screenshots/mfa-prompt.png). This final config for authentication policy for the app is shown in (screenshots/prompt-for-authentication-every-time.png)
+Now that that is working, I'm going to turn off email as an authenticator as it's not as secure of a method to use. TOTP is slightly better, but not phishing resistant. Something like a FIDO2 key, Okta verify with FastPass, or passkeys would be the better phishing resistant options because they rely on the physical device to also match. 
+Email was disallowed and deactivated from use in the Okta Admin Portal
