@@ -65,3 +65,6 @@ Traced sign-in flow in CloudTrail. AssumeRoleWithSAML event shows the test user 
 Reviewed users with potential admin privileges and found there is a policy that could allow for admin privileges, but no current users in the group. Added the finding to the docs/audit-findings.md doc
 Navigated to IAM --> Credential Reports to review current users and their permissions
 Identified two users with credentials that could circumvent federation and noted those in the docs/audit-findings.md file
+
+Post Lab Notes:
+Went back and set up Okta Fastpass and was able to sign in to the Test User account with FastPass as an option. This provided a phish resistant option for users.
